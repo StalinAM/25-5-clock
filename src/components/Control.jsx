@@ -25,8 +25,9 @@ const Arrow = styled.button`
   cursor: pointer;
 `;
 const Text = styled.p`
+  font-family: "Oxanium", cursive;
   color: white;
-  font-size: 2rem;
+  font-size: 2.5rem;
 `;
 function Control({
   id,
@@ -41,7 +42,7 @@ function Control({
     if (text < 60) funtion(text + 1);
   };
   const funDecrement = () => {
-    if (text > 0) funtion(text - 1);
+    if (text > 1) funtion(text - 1);
   };
   return (
     <Break>

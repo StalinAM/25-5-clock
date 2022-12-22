@@ -1,5 +1,4 @@
-import { useEffect } from "react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import styled from "styled-components";
 import Back from "./assets/blob-scene-haikei.svg";
 import Control from "./components/Control";
@@ -27,6 +26,10 @@ const Title = styled.h1`
 const LengthC = styled.div`
   display: flex;
   gap: 5rem;
+  @media only screen and (max-width: 500px) {
+    flex-direction: column;
+    gap: 1rem;
+  }
 `;
 const Timer = styled.div`
   display: flex;
@@ -39,11 +42,12 @@ const Timer = styled.div`
 `;
 const Name = styled.h2`
   color: white;
-  font-size: 1.5rem;
+  font-size: 1.8rem;
 `;
 const Clock = styled.span`
+  font-family: "Oxanium", cursive;
   font-size: 4rem;
-  color: white;
+  color: ${(props) => (props.minutes > 0 ? "white" : "red")};
 `;
 const ControlTimer = styled.div`
   display: flex;
@@ -60,22 +64,51 @@ const Btn = styled.button`
   padding: 0.5rem;
 `;
 function App() {
-  const [start, setStart] = useState();
-  const [seconds, setSeconds] = useState(0);
-  const [minutes, setMinutes] = useState(25);
+  const [start, setStart] = useState(false);
+  const [startBreak, setStartBreak] = useState(false);
   const [brake, setBrake] = useState(5);
   const [session, setSession] = useState(25);
+  const [minutes, setMinutes] = useState(session);
+  const [seconds, setSeconds] = useState(0);
 
-  const play = () => {
-    timer();
-    setStart(setInterval(timer, 1000));
-  };
+  const audio = useRef(null);
+
+  useEffect(() => {
+    if (startBreak) {
+      setMinutes(brake);
+      setSeconds(0);
+    }
+  }, [startBreak, brake]);
+  useEffect(() => {
+    if (!startBreak) {
+      setMinutes(session);
+      setSeconds(0);
+    }
+  }, [startBreak, session]);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      start && timer();
+    }, 100);
+
+    return () => {
+      clearInterval(interval);
+    };
+  });
   const timer = () => {
-    if (seconds == 0 && minutes != 0) {
-      console.log("holas");
-      setSeconds(60);
+    if (minutes === 0 && seconds === 0) {
+      setStartBreak(!startBreak);
+      audio.current.play();
+      return;
+    }
+
+    if (seconds === 0 && minutes >= 0) {
       setMinutes(minutes - 1);
+      setSeconds(59);
+      return;
+    }
+    if (minutes >= 0) {
       setSeconds(seconds - 1);
+      return;
     }
   };
 
@@ -85,6 +118,9 @@ function App() {
     setSeconds(0);
     setBrake(5);
     setStart(false);
+    setStartBreak(false);
+    audio.current.pause();
+    audio.current.currentTime = 0;
   };
 
   return (
@@ -111,21 +147,32 @@ function App() {
         />
       </LengthC>
       <Timer>
-        <Name id="timer-label">Session</Name>
-        <Clock id="time-left">
+        <Name id="timer-label">{!startBreak ? "session" : "break"}</Name>
+        <Clock id="time-left" minutes={minutes}>
           {minutes < 10 ? "0" + minutes : minutes}:
           {seconds < 10 ? "0" + seconds : seconds}
         </Clock>
       </Timer>
       <ControlTimer>
-        <Btn id="start_stop" onClick={play}>
-          <i className="uil uil-play"></i>
-        </Btn>
+        {start ? (
+          <Btn id="start_stop" onClick={() => setStart(false)}>
+            <i className="uil uil-play"></i>
+          </Btn>
+        ) : (
+          <Btn id="start_stop" onClick={() => setStart(true)}>
+            <i className="uil uil-play"></i>
+          </Btn>
+        )}
 
         <Btn id="reset" onClick={reset}>
           <i className="uil uil-sync"></i>
         </Btn>
       </ControlTimer>
+      <audio
+        id="beep"
+        ref={audio}
+        src="https://raw.githubusercontent.com/freeCodeCamp/cdn/master/build/testable-projects-fcc/audio/BeepSound.wav"
+      ></audio>
     </Container>
   );
 }
